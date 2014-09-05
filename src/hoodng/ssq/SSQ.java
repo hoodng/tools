@@ -26,24 +26,12 @@ public final class SSQ {
 		Map<String, Object> Args = ArgsParser.parse(args);
 		String dbfile = Args.containsKey("db") ? (String) Args.get("db")
 				: "ssqdb.txt";
-
+		boolean unfecth = Args.containsKey("without-fetch");
+		
 		Database db = new Database(new File(dbfile));
-		List<Record> recs = db.getRecords();
-		String start = "99999";
-		String end = recs.isEmpty() ? "03000" : recs.get(recs.size() - 1)
-				.issue();
-		List<Record> nrecs = RFetch.fetch(start, end);
-		int count = 0;
-		while (!nrecs.isEmpty()) {
-			Record rec = nrecs.remove(0);
-			if (!rec.issue().equals(end)) {
-				System.out.println(rec.toString());
-				recs.add(rec);
-				count++;
-			}
-		}
-		System.out.println("Fetch "+ count+" new records");
-		db.save();
+		List<Record> recs = !unfecth ? RFetch.fetch(db) : db.getRecords();
+
 		System.out.println("OK!");
 	}
+	
 }

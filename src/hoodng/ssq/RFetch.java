@@ -22,7 +22,12 @@ import org.apache.http.impl.client.HttpClients;
  */
 public final class RFetch {
 
-	public static List<Record> fetch(String start, String end) throws Exception {
+	public static List<Record> fetch(Database db) throws Exception {
+		List<Record> recs = db.getRecords();
+		String start = "99999";
+		String end = recs.isEmpty() ? "03000" : recs.get(recs.size() - 1)
+				.issue();
+
 		LinkedList<Record> list = new LinkedList<Record>();
 
 		StringBuilder url = new StringBuilder(
@@ -65,7 +70,19 @@ public final class RFetch {
 			}
 		}
 
-		return list;
+		int count = 0;
+		while (!list.isEmpty()) {
+			Record rec = list.remove(0);
+			if (!rec.issue().equals(end)) {
+				recs.add(rec);
+				count++;
+				System.out.println(rec.toString());
+			}
+		}
+		System.out.println("Fetch " + count + " new records");
+		db.save();
+
+		return recs;
 	}
 
 	private static Record parse(String str) {
