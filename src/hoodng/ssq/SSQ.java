@@ -6,18 +6,11 @@
  */
 package hoodng.ssq;
 
-import hoodng.util.FileUtil;
+import java.util.List;
+import java.io.File;
+import java.util.Map;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import hoodng.util.ArgsParser;
 
 /**
  * @author hudong
@@ -27,49 +20,30 @@ public final class SSQ {
 
 	/**
 	 * @param args
+	 * @throws Exception
 	 */
-	public static void main(String[] args) {
-		CloseableHttpClient httpclient = HttpClients.createDefault();
-		HttpGet httpget = new HttpGet(
-				"http://datachart.500.com/ssq/history/newinc/history.php?start=14200&end=09001");
-		CloseableHttpResponse response;
-		try {
-			response = httpclient.execute(httpget);
-			HttpEntity entity = response.getEntity();
-			if (entity != null) {
-				InputStream ins = entity.getContent();
-				ByteArrayOutputStream ous = new ByteArrayOutputStream();
-				try {
-					FileUtil.copyFile(ins, ous);
-					String str = ous.toString("utf-8");
-					//System.err.println(str);
-					int p0 = str.indexOf("<tr class=\"t_tr1\">");
-					int p1 = -1;
-					if(p0 != -1){
-						p1 = str.indexOf("</tbody>", p0);
-					}
-					str = str.substring(p0, p1);
-					str = str.replaceAll("<!--<td>2</td>-->|&nbsp;|</td></tr>", "");
-					str = str.replaceAll("<tr class=\"t_tr1\"><td>","|");
-					str = str.replaceAll("</td><td class=\"t_cfont[2|4]\">|</td><td>", ";");
-					String[] strs = str.split("\\|");
-					System.err.println(p0);
-					System.err.println(p1);
-					for(int i=0,len=strs.length; i<len; i++){
-						System.err.println(strs[i]);
-					}
-				} finally {
-					ins.close();
-					ous.close();
-				}
-			}
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public static void main(String[] args) throws Exception {
+		Map<String, Object> Args = ArgsParser.parse(args);
+		String dbfile = Args.containsKey("db") ? (String) Args.get("db")
+				: "ssqdb.txt";
 
+		Database db = new Database(new File(dbfile));
+		List<Record> recs = db.getRecords();
+		String start = "99999";
+		String end = recs.isEmpty() ? "03000" : recs.get(recs.size() - 1)
+				.issue();
+		List<Record> nrecs = RFetch.fetch(start, end);
+		int count = 0;
+		while (!nrecs.isEmpty()) {
+			Record rec = nrecs.remove(0);
+			if (!rec.issue().equals(end)) {
+				System.out.println(rec.toString());
+				recs.add(rec);
+				count++;
+			}
+		}
+		System.out.println("Fetch "+ count+" new records");
+		db.save();
+		System.out.println("OK!");
 	}
 }
