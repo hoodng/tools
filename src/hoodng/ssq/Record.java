@@ -9,6 +9,9 @@ package hoodng.ssq;
  */
 public final class Record {
 
+	public static final int REDMAX = 33;
+	public static final int BLUMAX = 16;
+
 	private static final ThreadLocal<StringBuilder> M = new ThreadLocal<StringBuilder>() {
 		@Override
 		protected StringBuilder initialValue() {
@@ -55,7 +58,7 @@ public final class Record {
 		str = str.trim();
 		if (str.isEmpty())
 			return null;
-		
+
 		String[] strs = str.split(split);
 		int[] reds = new int[6];
 		for (int i = 0, len = reds.length; i < len; i++) {
